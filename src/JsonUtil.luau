@@ -29,17 +29,17 @@ ToJson.Axes = function(value: Axes): AxesJson
 end
 
 FromJson.Axes = function(value: AxesJson): Axes
-	local out: Axes = Axes.new()
+	local axes: { Enum.Axis } = {}
 	for i, axis in ipairs(value) do
 		if axis == "X" then
-			out.X = true
+			table.insert(axes, Enum.Axis.X)
 		elseif axis == "Y" then
-			out.Y = true
+			table.insert(axes, Enum.Axis.Y)
 		elseif axis == "Z" then
-			out.Z = true
+			table.insert(axes, Enum.Axis.Z)
 		end
 	end
-	return out
+	return Axes.new(table.unpack(axes))
 end
 
 export type BoolJson = { Bool: boolean }
@@ -197,23 +197,23 @@ ToJson.Faces = function(value: Faces): FacesJson
 end
 
 FromJson.Faces = function(value: FacesJson): Faces
-	local out: Faces = Faces.new()
+	local normalIds: { Enum.NormalId } = {}
 	for i, face in ipairs(value) do
 		if face == "Right" then
-			out.Right = true
+			table.insert(normalIds, Enum.NormalId.Right)
 		elseif face == "Top" then
-			out.Top = true
+			table.insert(normalIds, Enum.NormalId.Top)
 		elseif face == "Back" then
-			out.Back = true
+			table.insert(normalIds, Enum.NormalId.Back)
 		elseif face == "Left" then
-			out.Left = true
+			table.insert(normalIds, Enum.NormalId.Left)
 		elseif face == "Bottom" then
-			out.Bottom = true
+			table.insert(normalIds, Enum.NormalId.Bottom)
 		elseif face == "Front" then
-			out.Front = true
+			table.insert(normalIds, Enum.NormalId.Front)
 		end
 	end
-	return out
+	return Faces.new(table.unpack(normalIds))
 end
 
 export type Float32Json = { Float32: number }
