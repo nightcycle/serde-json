@@ -1,16 +1,207 @@
 --!strict
--- uses the rojo explicit standard for converting roblox types into JSON-serializable structures
+-- inspired by the rojo explicit standard for converting roblox types into JSON-serializable structures
 -- Services
 -- Packages
+local Option = require("@wally/Option")
+local Result = require("@wally/Result")
 -- Modules
 -- Types
+type Option<V> = Option.Option<V>
+type Result<V, E> = Result.Result<V, E>
 -- Constants
 -- Variables
 -- References
--- Private FunctionsToJson
+-- Private Functions
+function getNumberType(value: number | NaNJson | InfJson): "number" | "NaN" | "Inf"
+	if typeof(value) == "number" then
+		if value ~= value then
+			return "NaN"
+		elseif math.abs(value) == math.huge then
+			return "Inf"
+		else
+			return "number"
+		end
+	elseif value["NaN"] then
+		return "NaN"
+	elseif value["Inf"] then
+		return "Inf"
+	elseif value["Int32"] or value["Int64"] or value["Float32"] or value["Float64"] then
+		return "number"
+	end
+	error(`Invalid number type: {value}`)
+end
+function getIfComplex(values: { number }): boolean
+	for i, v in ipairs(values) do
+		if getNumberType(v) ~= "number" then
+			return true
+		end
+	end
+	return false
+end
+
 -- Classes
 local ToJson = {}
 local FromJson = {}
+
+export type NaNJson = { NaN: true }
+
+ToJson.NaN = function(value: number): NaNJson
+	return table.freeze({
+		NaN = true,
+	} :: NaNJson)
+end
+
+FromJson.NaN = function(value: NaNJson): number
+	return 1 / 0
+end
+
+export type InfJson = { Inf: boolean }
+
+ToJson.Inf = function(value: number): InfJson
+	return table.freeze({
+		Inf = true,
+	} :: InfJson)
+end
+
+FromJson.Inf = function(value: InfJson): number
+	if value.Inf then
+		return math.huge
+	else
+		return -math.huge
+	end
+end
+
+export type Float32Json = { Float32: number | NaNJson | InfJson }
+ToJson.Float32 = function(value: number): Float32Json
+	local numberType = getNumberType(value)
+	if numberType == "NaN" then
+		return { Float32 = ToJson.NaN(value) }
+	elseif numberType == "Inf" then
+		return { Float32 = ToJson.Inf(value) }
+	elseif numberType == "number" then
+		return { Float32 = value }
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+FromJson.Float32 = function(value: Float32Json): number
+	local v = value.Float32
+	local numberType = getNumberType(v)
+	if numberType == "number" then
+		return v :: number
+	elseif numberType == "NaN" then
+		return FromJson.NaN(v :: NaNJson)
+	elseif numberType == "Inf" then
+		return FromJson.Inf(v :: InfJson)
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+local function ezFromF32(v: number | Float32Json): number
+	if typeof(v) == "number" then
+		return v
+	else
+		return FromJson.Float32(v)
+	end
+end
+
+export type Float64Json = { Float64: number | NaNJson | InfJson }
+ToJson.Float64 = function(value: number): Float64Json
+	local numberType = getNumberType(value)
+	if numberType == "NaN" then
+		return { Float64 = ToJson.NaN(value) }
+	elseif numberType == "Inf" then
+		return { Float64 = ToJson.Inf(value) }
+	elseif numberType == "number" then
+		return { Float64 = value }
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+FromJson.Float64 = function(value: Float64Json): number
+	local v = value.Float64
+	local numberType = getNumberType(v)
+	if numberType == "number" then
+		return v :: number
+	elseif numberType == "NaN" then
+		return FromJson.NaN(v :: NaNJson)
+	elseif numberType == "Inf" then
+		return FromJson.Inf(v :: InfJson)
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+export type Int32Json = { Int32: number | NaNJson | InfJson }
+ToJson.Int32 = function(value: number): Int32Json
+	local numberType = getNumberType(value)
+	if numberType == "NaN" then
+		return { Int32 = ToJson.NaN(value) }
+	elseif numberType == "Inf" then
+		return { Int32 = ToJson.Inf(value) }
+	elseif numberType == "number" then
+		return { Int32 = math.round(value) }
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+FromJson.Int32 = function(value: Int32Json): number
+	local v = value.Int32
+	local numberType = getNumberType(v)
+	if numberType == "number" then
+		return math.round(v :: number)
+	elseif numberType == "NaN" then
+		return FromJson.NaN(v :: NaNJson)
+	elseif numberType == "Inf" then
+		return FromJson.Inf(v :: InfJson)
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+export type Int64Json = { Int64: number | NaNJson | InfJson }
+ToJson.Int64 = function(value: number): Int64Json
+	local numberType = getNumberType(value)
+	if numberType == "NaN" then
+		return { Int64 = ToJson.NaN(value) }
+	elseif numberType == "Inf" then
+		return { Int64 = ToJson.Inf(value) }
+	elseif numberType == "number" then
+		return { Int64 = math.round(value) }
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+FromJson.Int64 = function(value: Int64Json): number
+	local v = value.Int64
+	local numberType = getNumberType(v)
+	if numberType == "number" then
+		return math.round(v :: number)
+	elseif numberType == "NaN" then
+		return FromJson.NaN(v :: NaNJson)
+	elseif numberType == "Inf" then
+		return FromJson.Inf(v :: InfJson)
+	end
+	error(`Unsupported number type: {numberType}`)
+end
+
+export type BoolJson = { Bool: boolean }
+
+ToJson.Bool = function(value: boolean): BoolJson
+	return { Bool = value }
+end
+
+FromJson.Bool = function(value: BoolJson): boolean
+	return value.Bool
+end
+
+export type StringJson = { String: string }
+
+ToJson.String = function(value: string): StringJson
+	return { String = value }
+end
+
+FromJson.String = function(value: StringJson): string
+	return value.String
+end
 
 export type AxesJson = { "X" | "Y" | "Z" }
 
@@ -42,16 +233,6 @@ FromJson.Axes = function(value: AxesJson): Axes
 	return Axes.new(table.unpack(axes))
 end
 
-export type BoolJson = { Bool: boolean }
-
-ToJson.Bool = function(value: boolean): BoolJson
-	return { Bool = value }
-end
-
-FromJson.Bool = function(value: BoolJson): boolean
-	return value.Bool
-end
-
 export type BrickColorJson = { BrickColor: number }
 
 ToJson.BrickColor = function(value: BrickColor): BrickColorJson
@@ -65,63 +246,101 @@ end
 export type CFrameJson = {
 	position: { number },
 	orientation: { { number } },
+} | {
+	position: { Float32Json },
+	orientation: { { Float32Json } },
 }
 
 ToJson.CFrame = function(value: CFrame): CFrameJson
 	local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = value:GetComponents()
-	return {
-		position = { x, y, z },
-		orientation = {
-			{ R00, R01, R02 },
-			{ R10, R11, R12 },
-			{ R20, R21, R22 },
-		},
-	}
+	local isComplex = getIfComplex({ x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 })
+	if isComplex then
+		return {
+			position = { ToJson.Float32(x), ToJson.Float32(y), ToJson.Float32(z) },
+			orientation = {
+				{ ToJson.Float32(R00), ToJson.Float32(R01), ToJson.Float32(R02) },
+				{ ToJson.Float32(R10), ToJson.Float32(R11), ToJson.Float32(R12) },
+				{ ToJson.Float32(R20), ToJson.Float32(R21), ToJson.Float32(R22) },
+			},
+		}
+	else
+		return {
+			position = { x, y, z },
+			orientation = {
+				{ R00, R01, R02 },
+				{ R10, R11, R12 },
+				{ R20, R21, R22 },
+			},
+		}
+	end
 end
 
 FromJson.CFrame = function(value: CFrameJson): CFrame
 	local orientation = value.orientation
+
 	return CFrame.new(
-		value.position[1],
-		value.position[2],
-		value.position[3],
-		orientation[1][1],
-		orientation[1][2],
-		orientation[1][3],
-		orientation[2][1],
-		orientation[2][2],
-		orientation[2][3],
-		orientation[3][1],
-		orientation[3][2],
-		orientation[3][3]
+		ezFromF32(value.position[1]),
+		ezFromF32(value.position[2]),
+		ezFromF32(value.position[3]),
+		ezFromF32(orientation[1][1]),
+		ezFromF32(orientation[1][2]),
+		ezFromF32(orientation[1][3]),
+		ezFromF32(orientation[2][1]),
+		ezFromF32(orientation[2][2]),
+		ezFromF32(orientation[2][3]),
+		ezFromF32(orientation[3][1]),
+		ezFromF32(orientation[3][2]),
+		ezFromF32(orientation[3][3])
 	)
 end
 
-export type Color3Json = { Color3: { number } }
+export type Color3Json = { Color3: { number } | { Float32Json } }
 
 ToJson.Color3 = function(value: Color3): Color3Json
-	return {
-		Color3 = { value.R, value.G, value.B },
-	}
+	local isComplex = getIfComplex({ value.R, value.G, value.B })
+	if isComplex then
+		return {
+			Color3 = { ToJson.Float32(value.R), ToJson.Float32(value.G), ToJson.Float32(value.B) },
+		}
+	else
+		return {
+			Color3 = { value.R, value.G, value.B },
+		}
+	end
 end
 
 FromJson.Color3 = function(value: Color3Json): Color3
-	return Color3.new(value.Color3[1], value.Color3[2], value.Color3[3])
+	return Color3.new(ezFromF32(value.Color3[1]), ezFromF32(value.Color3[2]), ezFromF32(value.Color3[3]))
 end
 
 export type ColorSequenceJson = {
 	ColorSequence: {
-		keypoints: { { time: number, color: { number } } },
+		keypoints: { { time: Float32Json, color: { Float32Json } } | { time: number, color: { number } } },
 	},
 }
 ToJson.ColorSequence = function(value: ColorSequence): ColorSequenceJson
-	local keypoints: { { time: number, color: { number } } } = {}
+	local keypoints: { { time: Float32Json, color: { Float32Json } } | { time: number, color: { number } } } =
+		{}
 	for i, keypoint in ipairs(value.Keypoints) do
-		table.insert(keypoints, {
-			time = keypoint.Time,
-			color = { keypoint.Value.R, keypoint.Value.G, keypoint.Value.B },
-		})
+		local isComplex =
+			getIfComplex({ keypoint.Time, keypoint.Value.R, keypoint.Value.G, keypoint.Value.B })
+		if isComplex then
+			table.insert(keypoints, {
+				time = ToJson.Float32(keypoint.Time),
+				color = {
+					ToJson.Float32(keypoint.Value.R),
+					ToJson.Float32(keypoint.Value.G),
+					ToJson.Float32(keypoint.Value.B),
+				},
+			})
+		else
+			table.insert(keypoints, {
+				time = keypoint.Time,
+				color = { keypoint.Value.R, keypoint.Value.G, keypoint.Value.B },
+			})
+		end
 	end
+
 	return {
 		ColorSequence = {
 			keypoints = keypoints,
@@ -135,8 +354,12 @@ FromJson.ColorSequence = function(value: ColorSequenceJson): ColorSequence
 		table.insert(
 			keypoints,
 			ColorSequenceKeypoint.new(
-				keypoint.time,
-				Color3.new(keypoint.color[1], keypoint.color[2], keypoint.color[3])
+				ezFromF32(keypoint.time),
+				Color3.new(
+					ezFromF32(keypoint.color[1]),
+					ezFromF32(keypoint.color[2]),
+					ezFromF32(keypoint.color[3])
+				)
 			)
 		)
 	end
@@ -216,24 +439,6 @@ FromJson.Faces = function(value: FacesJson): Faces
 	return Faces.new(table.unpack(normalIds))
 end
 
-export type Float32Json = { Float32: number }
-ToJson.Float32 = function(value: number): Float32Json
-	return { Float32 = value }
-end
-
-FromJson.Float32 = function(value: Float32Json): number
-	return value.Float32
-end
-
-export type Float64Json = { Float64: number }
-ToJson.Float64 = function(value: number): Float64Json
-	return { Float64 = value }
-end
-
-FromJson.Float64 = function(value: Float64Json): number
-	return value.Float64
-end
-
 export type FontJson = {
 	Font: {
 		family: string,
@@ -258,51 +463,75 @@ FromJson.Font = function(value: FontJson): Font
 	return Font.new(value.Font.family, weight, style)
 end
 
-export type Int32Json = { Int32: number }
-ToJson.Int32 = function(value: number): Int32Json
-	return { Int32 = math.round(value) }
-end
-
-FromJson.Int32 = function(value: Int32Json): number
-	return value.Int32
-end
-
-export type Int64Json = { Int64: number }
-ToJson.Int64 = function(value: number): Int64Json
-	return { Int64 = math.round(value) }
-end
-
-FromJson.Int64 = function(value: Int64Json): number
-	return value.Int64
-end
-
 export type NumberRangeJson = {
-	NumberRange: { number },
+	NumberRange: { Float32Json } | { number },
 }
 ToJson.NumberRange = function(value: NumberRange): NumberRangeJson
-	return {
-		NumberRange = {
-			value.Min,
-			value.Max,
-		},
-	}
+	local isComplex = getIfComplex({ value.Min, value.Max })
+	if isComplex then
+		return {
+			NumberRange = {
+				ToJson.Float32(value.Min),
+				ToJson.Float32(value.Max),
+			},
+		}
+	else
+		return {
+			NumberRange = {
+				value.Min,
+				value.Max,
+			},
+		}
+	end
 end
 
 FromJson.NumberRange = function(value: NumberRangeJson): NumberRange
-	return NumberRange.new(value.NumberRange[1], value.NumberRange[2])
+	return NumberRange.new(ezFromF32(value.NumberRange[1]), ezFromF32(value.NumberRange[2]))
 end
 
 export type NumberSequenceJson = {
-	NumberSequence: { keypoints: { { time: number, value: number, envelope: number } } },
+	NumberSequence: {
+		keypoints: {
+			{
+				time: Float32Json,
+				value: Float32Json,
+				envelope: Float32Json,
+			} | {
+				time: number,
+				value: number,
+				envelope: number,
+			}
+		},
+	},
 }
 ToJson.NumberSequence = function(value: NumberSequence): NumberSequenceJson
-	local keypoints: { { time: number, value: number, envelope: number } } = {}
+	local keypoints: {
+		{
+			time: Float32Json,
+			value: Float32Json,
+			envelope: Float32Json,
+		} | {
+			time: number,
+			value: number,
+			envelope: number,
+		}
+	} =
+		{}
 	for i, keypoint in ipairs(value.Keypoints) do
-		table.insert(keypoints, {
-			time = keypoint.Time,
-			value = keypoint.Value,
-			envelope = keypoint.Envelope,
-		})
+		local isComplex = getIfComplex({ keypoint.Time, keypoint.Value, keypoint.Envelope })
+		if isComplex then
+			table.insert(keypoints, {
+				time = ToJson.Float32(keypoint.Time),
+				value = ToJson.Float32(keypoint.Value),
+				envelope = ToJson.Float32(keypoint.Envelope),
+			})
+		else
+			table.insert(keypoints, {
+				time = keypoint.Time,
+				value = keypoint.Value,
+				envelope = keypoint.Envelope,
+			})
+		end
 	end
 	return {
 		NumberSequence = {
@@ -314,7 +543,14 @@ end
 FromJson.NumberSequence = function(value: NumberSequenceJson): NumberSequence
 	local keypoints = {}
 	for i, keypoint in ipairs(value.NumberSequence.keypoints) do
-		table.insert(keypoints, NumberSequenceKeypoint.new(keypoint.time, keypoint.value, keypoint.envelope))
+		table.insert(
+			keypoints,
+			NumberSequenceKeypoint.new(
+				ezFromF32(keypoint.time),
+				ezFromF32(keypoint.value),
+				ezFromF32(keypoint.envelope)
+			)
+		)
 	end
 	return NumberSequence.new(keypoints)
 end
@@ -326,6 +562,12 @@ export type PhysicalPropertiesJson = {
 		elasticity: number,
 		frictionWeight: number,
 		elasticityWeight: number,
+	} | {
+		density: Float32Json,
+		friction: Float32Json,
+		elasticity: Float32Json,
+		frictionWeight: Float32Json,
+		elasticityWeight: Float32Json,
 	},
 }
 
@@ -334,24 +576,44 @@ ToJson.PhysicalProperties = function(value: PhysicalProperties): PhysicalPropert
 		typeof(value) == "PhysicalProperties",
 		`PhysicalProperties must be a PhysicalProperties, got typeof "{typeof(value)}"`
 	)
-	return {
-		PhysicalProperties = {
-			density = value.Density,
-			friction = value.Friction,
-			elasticity = value.Elasticity,
-			frictionWeight = value.FrictionWeight,
-			elasticityWeight = value.ElasticityWeight,
-		},
-	}
+
+	local isComplex = getIfComplex({
+		value.Density,
+		value.Friction,
+		value.Elasticity,
+		value.FrictionWeight,
+		value.ElasticityWeight,
+	})
+	if isComplex then
+		return {
+			PhysicalProperties = {
+				density = ToJson.Float32(value.Density),
+				friction = ToJson.Float32(value.Friction),
+				elasticity = ToJson.Float32(value.Elasticity),
+				frictionWeight = ToJson.Float32(value.FrictionWeight),
+				elasticityWeight = ToJson.Float32(value.ElasticityWeight),
+			},
+		}
+	else
+		return {
+			PhysicalProperties = {
+				density = value.Density,
+				friction = value.Friction,
+				elasticity = value.Elasticity,
+				frictionWeight = value.FrictionWeight,
+				elasticityWeight = value.ElasticityWeight,
+			},
+		}
+	end
 end
 
 FromJson.PhysicalProperties = function(value: PhysicalPropertiesJson): PhysicalProperties
 	return PhysicalProperties.new(
-		value.PhysicalProperties.density,
-		value.PhysicalProperties.friction,
-		value.PhysicalProperties.elasticity,
-		value.PhysicalProperties.frictionWeight,
-		value.PhysicalProperties.elasticityWeight
+		ezFromF32(value.PhysicalProperties.density),
+		ezFromF32(value.PhysicalProperties.friction),
+		ezFromF32(value.PhysicalProperties.elasticity),
+		ezFromF32(value.PhysicalProperties.frictionWeight),
+		ezFromF32(value.PhysicalProperties.elasticityWeight)
 	)
 end
 
@@ -359,138 +621,295 @@ export type RayJson = {
 	Ray: {
 		origin: { number },
 		direction: { number },
+	} | {
+		origin: { Float32Json },
+		direction: { Float32Json },
 	},
 }
 
 ToJson.Ray = function(value: Ray): RayJson
-	return {
-		Ray = {
-			origin = { value.Origin.X, value.Origin.Y, value.Origin.Z },
-			direction = { value.Direction.X, value.Direction.Y, value.Direction.Z },
-		},
-	}
+	local isComplex = getIfComplex({
+		value.Origin.X,
+		value.Origin.Y,
+		value.Origin.Z,
+		value.Direction.X,
+		value.Direction.Y,
+		value.Direction.Z,
+	})
+	if isComplex then
+		return {
+			Ray = {
+				origin = {
+					ToJson.Float32(value.Origin.X),
+					ToJson.Float32(value.Origin.Y),
+					ToJson.Float32(value.Origin.Z),
+				},
+				direction = {
+					ToJson.Float32(value.Direction.X),
+					ToJson.Float32(value.Direction.Y),
+					ToJson.Float32(value.Direction.Z),
+				},
+			},
+		}
+	else
+		return {
+			Ray = {
+				origin = { value.Origin.X, value.Origin.Y, value.Origin.Z },
+				direction = { value.Direction.X, value.Direction.Y, value.Direction.Z },
+			},
+		}
+	end
 end
 
 FromJson.Ray = function(value: RayJson): Ray
 	return Ray.new(
-		Vector3.new(value.Ray.origin[1], value.Ray.origin[2], value.Ray.origin[3]),
-		Vector3.new(value.Ray.direction[1], value.Ray.direction[2], value.Ray.direction[3])
+		Vector3.new(
+			ezFromF32(value.Ray.origin[1]),
+			ezFromF32(value.Ray.origin[2]),
+			ezFromF32(value.Ray.origin[3])
+		),
+		Vector3.new(
+			ezFromF32(value.Ray.direction[1]),
+			ezFromF32(value.Ray.direction[2]),
+			ezFromF32(value.Ray.direction[3])
+		)
 	)
 end
 
 export type RectJson = {
-	Rect: { { number } },
+	Rect: { { number } } | { { Float32Json } },
 }
 
 ToJson.Rect = function(value: Rect): RectJson
-	return {
-		Rect = {
-			{ value.Min.X, value.Min.Y },
-			{ value.Max.X, value.Max.Y },
-		},
-	}
+	local isComplex = getIfComplex({ value.Min.X, value.Min.Y, value.Max.X, value.Max.Y })
+	if isComplex then
+		return {
+			Rect = {
+				{ ToJson.Float32(value.Min.X), ToJson.Float32(value.Min.Y) },
+				{ ToJson.Float32(value.Max.X), ToJson.Float32(value.Max.Y) },
+			},
+		}
+	else
+		return {
+			Rect = {
+				{ value.Min.X, value.Min.Y },
+				{ value.Max.X, value.Max.Y },
+			},
+		}
+	end
 end
 
 FromJson.Rect = function(value: RectJson): Rect
-	return Rect.new(value.Rect[1][1], value.Rect[1][2], value.Rect[2][1], value.Rect[2][2])
-end
-
-export type StringJson = { String: string }
-
-ToJson.String = function(value: string): StringJson
-	return { String = value }
-end
-
-FromJson.String = function(value: StringJson): string
-	return value.String
+	return Rect.new(
+		ezFromF32(value.Rect[1][1]),
+		ezFromF32(value.Rect[1][2]),
+		ezFromF32(value.Rect[2][1]),
+		ezFromF32(value.Rect[2][2])
+	)
 end
 
 export type UDimJson = {
-	UDim: { number },
+	UDim: { number } | { Float32Json },
 }
 
 ToJson.UDim = function(value: UDim): UDimJson
-	return {
-		UDim = {
-			value.Scale,
-			math.round(value.Offset),
-		},
-	}
+	local isComplex = getIfComplex({ value.Scale, value.Offset })
+	if isComplex then
+		return {
+			UDim = {
+				ToJson.Float32(value.Scale),
+				ToJson.Float32(value.Offset),
+			},
+		}
+	else
+		return {
+			UDim = {
+				value.Scale,
+				math.round(value.Offset),
+			},
+		}
+	end
 end
 
 FromJson.UDim = function(value: UDimJson): UDim
-	return UDim.new(value.UDim[1], value.UDim[2])
+	return UDim.new(ezFromF32(value.UDim[1]), ezFromF32(value.UDim[2]))
 end
 
 export type UDim2Json = {
-	UDim2: { { number } },
+	UDim2: { { number } } | { { Float32Json } },
 }
 
 ToJson.UDim2 = function(value: UDim2): UDim2Json
-	return {
-		UDim2 = {
-			{ value.X.Scale, math.round(value.X.Offset) },
-			{ value.Y.Scale, math.round(value.Y.Offset) },
-		},
-	}
+	local isComplex = getIfComplex({ value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset })
+	if isComplex then
+		return {
+			UDim2 = {
+				{ ToJson.Float32(value.X.Scale), ToJson.Float32(value.X.Offset) },
+				{ ToJson.Float32(value.Y.Scale), ToJson.Float32(value.Y.Offset) },
+			},
+		}
+	else
+		return {
+			UDim2 = {
+				{ value.X.Scale, math.round(value.X.Offset) },
+				{ value.Y.Scale, math.round(value.Y.Offset) },
+			},
+		}
+	end
 end
 
 FromJson.UDim2 = function(value: UDim2Json): UDim2
 	return UDim2.new(
-		UDim.new(value.UDim2[1][1], value.UDim2[1][2]),
-		UDim.new(value.UDim2[2][1], value.UDim2[2][2])
+		UDim.new(ezFromF32(value.UDim2[1][1]), ezFromF32(value.UDim2[1][2])),
+		UDim.new(ezFromF32(value.UDim2[2][1]), ezFromF32(value.UDim2[2][2]))
 	)
 end
 
 export type Vector2Json = {
-	Vector2: { number },
+	Vector2: { number } | { Float32Json },
 }
 
 ToJson.Vector2 = function(value: Vector2): Vector2Json
-	return {
-		Vector2 = { value.X, value.Y },
-	}
+	local isComplex = getIfComplex({ value.X, value.Y })
+	if isComplex then
+		return {
+			Vector2 = {
+				ToJson.Float32(value.X),
+				ToJson.Float32(value.Y),
+			},
+		}
+	else
+		return {
+			Vector2 = { value.X, value.Y },
+		}
+	end
 end
 
 FromJson.Vector2 = function(value: Vector2Json): Vector2
-	return Vector2.new(value.Vector2[1], value.Vector2[2])
+	return Vector2.new(ezFromF32(value.Vector2[1]), ezFromF32(value.Vector2[2]))
 end
 
 export type Vector3Json = {
-	Vector3: { number },
+	Vector3: { number } | { Float32Json },
 }
 
 ToJson.Vector3 = function(value: Vector3): Vector3Json
-	assert(typeof(value) == "Vector3", `Vector3 must be a Vector3, got typeof "{typeof(value)}"`)
-	return {
-		Vector3 = { value.X, value.Y, value.Z },
-	}
+	local isComplex = getIfComplex({ value.X, value.Y, value.Z })
+	if isComplex then
+		return {
+			Vector3 = {
+				ToJson.Float32(value.X),
+				ToJson.Float32(value.Y),
+				ToJson.Float32(value.Z),
+			},
+		}
+	else
+		return {
+			Vector3 = { value.X, value.Y, value.Z },
+		}
+	end
 end
 
 FromJson.Vector3 = function(value: Vector3Json): Vector3
-	return Vector3.new(value.Vector3[1], value.Vector3[2], value.Vector3[3])
+	return Vector3.new(ezFromF32(value.Vector3[1]), ezFromF32(value.Vector3[2]), ezFromF32(value.Vector3[3]))
 end
 
 -- this is not officially supported by Rojo, however it seems handy to have
 export type Region3Json = {
-	Region3: { Min: { number }, Max: { number } },
+	Region3: { Min: { number }, Max: { number } } | { Min: { Float32Json }, Max: { Float32Json } },
 }
 ToJson.Region3 = function(value: Region3): Region3Json
 	local min, max = value.CFrame.Position - value.Size / 2, value.CFrame.Position + value.Size / 2
 
-	return {
-		Region3 = {
-			Min = { min.X, min.Y, min.Z },
-			Max = { max.X, max.Y, max.Z },
-		},
-	}
+	local isComplex = getIfComplex({ min.X, min.Y, min.Z, max.X, max.Y, max.Z })
+	if isComplex then
+		return {
+			Region3 = {
+				Min = {
+					ToJson.Float32(min.X),
+					ToJson.Float32(min.Y),
+					ToJson.Float32(min.Z),
+				},
+				Max = {
+					ToJson.Float32(max.X),
+					ToJson.Float32(max.Y),
+					ToJson.Float32(max.Z),
+				},
+			},
+		}
+	else
+		return {
+			Region3 = {
+				Min = { min.X, min.Y, min.Z },
+				Max = { max.X, max.Y, max.Z },
+			},
+		}
+	end
 end
 
 FromJson.Region3 = function(value: Region3Json): Region3
 	return Region3.new(
-		Vector3.new(value.Region3.Min[1], value.Region3.Min[2], value.Region3.Min[3]),
-		Vector3.new(value.Region3.Max[1], value.Region3.Max[2], value.Region3.Max[3])
+		Vector3.new(
+			ezFromF32(value.Region3.Min[1]),
+			ezFromF32(value.Region3.Min[2]),
+			ezFromF32(value.Region3.Min[3])
+		),
+		Vector3.new(
+			ezFromF32(value.Region3.Max[1]),
+			ezFromF32(value.Region3.Max[2]),
+			ezFromF32(value.Region3.Max[3])
+		)
 	)
+end
+
+export type OptionJson<V> = {
+	None: true,
+} | {
+	Some: V,
+}
+
+ToJson.Option = function<V>(value: Option<V & JsonValue>): OptionJson<V>
+	return value:match(function(v): OptionJson<V & JsonValue>
+		return {
+			Some = v,
+		}
+	end, function(): OptionJson<V & JsonValue>
+		return table.freeze({ None = true } :: {
+			None: true,
+		})
+	end)
+end
+
+FromJson.Option = function<V>(value: OptionJson<V & JsonValue>): Option<V>
+	if value["None"] then
+		return Option.none()
+	else
+		return Option.some(value["Some"] :: V)
+	end
+end
+
+export type ResultJson<V, E> = {
+	Err: E,
+} | {
+	Ok: V,
+}
+
+ToJson.Result = function<V, E>(value: Result<V & JsonValue, E & JsonValue>): ResultJson<V, E>
+	return value:match(function(v): ResultJson<V, E>
+		return {
+			Ok = v,
+		}
+	end, function(e): ResultJson<V, E>
+		return { Err = e }
+	end)
+end
+
+FromJson.Result = function<V, E>(value: ResultJson<V & JsonValue, E & JsonValue>): Result<V, E>
+	if value["Err"] then
+		return Result.err(value["Err"] :: E)
+	else
+		return Result.ok(value["Ok"] :: V)
+	end
 end
 
 export type Value =
@@ -514,6 +933,8 @@ export type Value =
 	| Vector2
 	| Vector3
 	| Region3
+	| Option<Value>
+	| Result<Value, Value>
 
 export type JsonValue =
 	AxesJson
@@ -540,6 +961,10 @@ export type JsonValue =
 	| Vector2Json
 	| Vector3Json
 	| Region3Json
+	| InfJson
+	| NaNJson
+	| OptionJson<JsonValue>
+	| ResultJson<JsonValue, JsonValue>
 
 return {
 	ser = ToJson,

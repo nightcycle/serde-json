@@ -3,12 +3,45 @@
 local HttpService = game:GetService("HttpService")
 -- Packages
 local Result = require("@wally/Result")
+local Option = require("@wally/Option")
 -- Modules
 local JsonUtil = require("@proj/JsonUtil")
 -- Types
 export type Ser = typeof(JsonUtil.ser)
 export type Deser = typeof(JsonUtil.deser)
 export type Result<V, E> = Result.Result<V, E>
+export type Option<V> = Option.Option<V>
+export type JsonValue = JsonUtil.JsonValue
+export type Value = JsonUtil.Value
+export type AxesJson = JsonUtil.AxesJson
+export type BoolJson = JsonUtil.BoolJson
+export type BrickColorJson = JsonUtil.BrickColorJson
+export type CFrameJson = JsonUtil.CFrameJson
+export type Color3Json = JsonUtil.Color3Json
+export type ColorSequenceJson = JsonUtil.ColorSequenceJson
+export type EnumJson = JsonUtil.EnumJson
+export type FacesJson = JsonUtil.FacesJson
+export type Float32Json = JsonUtil.Float32Json
+export type Float64Json = JsonUtil.Float64Json
+export type FontJson = JsonUtil.FontJson
+export type Int32Json = JsonUtil.Int32Json
+export type Int64Json = JsonUtil.Int64Json
+export type NumberRangeJson = JsonUtil.NumberRangeJson
+export type NumberSequenceJson = JsonUtil.NumberSequenceJson
+export type PhysicalPropertiesJson = JsonUtil.PhysicalPropertiesJson
+export type RayJson = JsonUtil.RayJson
+export type RectJson = JsonUtil.RectJson
+export type StringJson = JsonUtil.StringJson
+export type UDimJson = JsonUtil.UDimJson
+export type UDim2Json = JsonUtil.UDim2Json
+export type Vector2Json = JsonUtil.Vector2Json
+export type Vector3Json = JsonUtil.Vector3Json
+export type Region3Json = JsonUtil.Region3Json
+export type InfJson = JsonUtil.InfJson
+export type NaNJson = JsonUtil.NaNJson
+export type OptionJson<V> = JsonUtil.OptionJson<V>
+export type ResultJson<V, E> = JsonUtil.ResultJson<V, E>
+
 type SerdeImpl<Field, JsonField> = {
 	__index: SerdeImpl<Field, JsonField>,
 	toString: (self: Serde<Field, JsonField>, input: Field) -> Result<string, string>,
