@@ -868,19 +868,19 @@ export type OptionJson<V> = {
 	Some: V,
 }
 
-ToJson.Option = function<V>(value: Option<V & JsonValue>): OptionJson<V>
-	return value:match(function(v): OptionJson<V & JsonValue>
+ToJson.Option = function<V>(value: Option<V>): OptionJson<V>
+	return value:match(function(v): OptionJson<V>
 		return {
 			Some = v,
 		}
-	end, function(): OptionJson<V & JsonValue>
+	end, function(): OptionJson<V>
 		return table.freeze({ None = true } :: {
 			None: true,
 		})
 	end)
 end
 
-FromJson.Option = function<V>(value: OptionJson<V & JsonValue>): Option<V>
+FromJson.Option = function<V>(value: OptionJson<V>): Option<V>
 	if value["None"] then
 		return Option.none()
 	else
@@ -894,7 +894,7 @@ export type ResultJson<V, E> = {
 	Ok: V,
 }
 
-ToJson.Result = function<V, E>(value: Result<V & JsonValue, E & JsonValue>): ResultJson<V, E>
+ToJson.Result = function<V, E>(value: Result<V, E>): ResultJson<V, E>
 	return value:match(function(v): ResultJson<V, E>
 		return {
 			Ok = v,
@@ -904,7 +904,7 @@ ToJson.Result = function<V, E>(value: Result<V & JsonValue, E & JsonValue>): Res
 	end)
 end
 
-FromJson.Result = function<V, E>(value: ResultJson<V & JsonValue, E & JsonValue>): Result<V, E>
+FromJson.Result = function<V, E>(value: ResultJson<V, E>): Result<V, E>
 	if value["Err"] then
 		return Result.err(value["Err"] :: E)
 	else
@@ -933,8 +933,6 @@ export type Value =
 	| Vector2
 	| Vector3
 	| Region3
-	| Option<Value>
-	| Result<Value, Value>
 
 export type JsonValue =
 	AxesJson
