@@ -43,6 +43,8 @@ end
 local ToJson = {}
 local FromJson = {}
 
+export type AnyJson = { [string]: string | boolean | number | AnyJson } | { string | boolean | number | AnyJson }
+
 export type NaNJson = { NaN: true }
 
 ToJson.NaN = function(value: number): NaNJson
@@ -961,6 +963,7 @@ export type JsonValue =
 	| Region3Json
 	| InfJson
 	| NaNJson
+	| AnyJson
 	| OptionJson<JsonValue>
 	| ResultJson<JsonValue, JsonValue>
 

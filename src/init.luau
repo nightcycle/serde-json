@@ -41,9 +41,12 @@ export type InfJson = JsonUtil.InfJson
 export type NaNJson = JsonUtil.NaNJson
 export type OptionJson<V> = JsonUtil.OptionJson<V>
 export type ResultJson<V, E> = JsonUtil.ResultJson<V, E>
+export type AnyJson = JsonUtil.AnyJson
 
 type SerdeImpl<Field, JsonField> = {
 	__index: SerdeImpl<Field, JsonField>,
+	encode: (self: Serde<Field, JsonField>, input: Field) -> Result<JsonField, string>,
+	decode: (self: Serde<Field, JsonField>, input: JsonField) -> Result<Field, string>,
 	toString: (self: Serde<Field, JsonField>, input: Field) -> Result<string, string>,
 	fromString: (self: Serde<Field, JsonField>, input: string) -> Result<Field, string>,
 }
@@ -106,6 +109,22 @@ end
 function Serde:toString(input: { [string]: unknown }): Result<string, string>
 	return Result.try(function()
 		return HttpService:JSONEncode(self._ser(input, JsonUtil.ser))
+	end)
+end
+
+function Serde:encode(input: { [string]: unknown }): Result<{ [string]: JsonUtil.JsonValue }, string>
+	return Result.try(function()
+		return self._ser(input, JsonUtil.ser) :: { [string]: JsonUtil.JsonValue }
+	end):match(function(value)
+		return Result.ok(value)
+	end, function(err: string)
+		return Result.err(err)
+	end)
+end
+
+function Serde:decode(input: { [string]: JsonUtil.JsonValue }): Result<{ [string]: unknown }, string>
+	return Result.try(function()
+		return self._deser(input, JsonUtil.deser)
 	end)
 end
 
