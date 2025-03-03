@@ -15,7 +15,7 @@
 		".bin": true,
 		"types": true,
 		".mypy_cache": true,
-		"Packages": true,
+		// "Packages": true,
 		"serve": true,
 		"sourcemap.json": true,
 		"*.rbxl": true,
