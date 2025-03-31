@@ -5,9 +5,12 @@
 local Option = require("@wally/Option")
 local Result = require("@wally/Result")
 -- Modules
+local Types = require("@proj/Types")
 -- Types
 type Option<V> = Option.Option<V>
 type Result<V, E> = Result.Result<V, E>
+type Value = Types.Value
+
 -- Constants
 -- Variables
 -- References
@@ -913,28 +916,6 @@ FromJson.Result = function<V, E>(value: ResultJson<V, E>): Result<V, E>
 		return Result.ok(value["Ok"] :: V)
 	end
 end
-
-export type Value =
-	Axes
-	| boolean
-	| BrickColor
-	| CFrame
-	| Color3
-	| ColorSequence
-	| EnumItem
-	| Faces
-	| number
-	| NumberRange
-	| NumberSequence
-	| PhysicalProperties
-	| Ray
-	| Rect
-	| string
-	| UDim
-	| UDim2
-	| Vector2
-	| Vector3
-	| Region3
 
 export type JsonValue =
 	AxesJson

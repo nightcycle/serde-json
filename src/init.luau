@@ -6,13 +6,14 @@ local Result = require("@wally/Result")
 local Option = require("@wally/Option")
 -- Modules
 local JsonUtil = require("@proj/JsonUtil")
+local Types = require("@proj/Types")
 -- Types
 export type Ser = typeof(JsonUtil.ser)
 export type Deser = typeof(JsonUtil.deser)
 export type Result<V, E> = Result.Result<V, E>
 export type Option<V> = Option.Option<V>
 export type JsonValue = JsonUtil.JsonValue
-export type Value = JsonUtil.Value
+export type Value = Types.Value
 export type AxesJson = JsonUtil.AxesJson
 export type BoolJson = JsonUtil.BoolJson
 export type BrickColorJson = JsonUtil.BrickColorJson
