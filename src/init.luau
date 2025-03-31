@@ -1,6 +1,5 @@
 --!strict
 -- Services
-local HttpService = game:GetService("HttpService")
 -- Packages
 local Result = require("@wally/Result")
 local Option = require("@wally/Option")
@@ -62,6 +61,32 @@ export type Serde<Field, JsonField> = typeof(setmetatable(
 -- Variables
 -- References
 -- Private Functions
+function getIfRobloxEnv()
+	local isRobloxEnv = pcall(function()
+		local _ = DateTime.now()
+	end)
+	return isRobloxEnv
+end
+function jsonEncode(v: JsonValue): string
+	local isRobloxEnv = getIfRobloxEnv()
+	if isRobloxEnv then
+		return game:GetService("HttpService"):JSONEncode(v)
+	else
+		local req = require
+		local serde = req("@lune/serde")
+		return serde.encode("json", v)
+	end
+end
+function jsonDecode(v: string): JsonValue
+	local isRobloxEnv = getIfRobloxEnv()
+	if isRobloxEnv then
+		return game:GetService("HttpService"):JSONDecode(v)
+	else
+		local req = require
+		local serde = req("@lune/serde")
+		return serde.decode("json", v)
+	end
+end
 function intersect<AI, AO, BI, BO, Interface>(a: (AI, Interface) -> AO, b: (BI, Interface) -> BO): (AI & BI, Interface) -> AO & BO
 	return function(input: AI & BI, interface: Interface): AO & BO
 		local fields = {
@@ -108,7 +133,7 @@ end
 
 function Serde:toString(input: { [string]: unknown }): Result<string, string>
 	return Result.try(function()
-		return HttpService:JSONEncode(self._ser(input, JsonUtil.ser))
+		return jsonEncode(self._ser(input, JsonUtil.ser))
 	end)
 end
 
@@ -130,7 +155,7 @@ end
 
 function Serde:fromString(input: string): Result<{ [string]: unknown }, string>
 	return Result.try(function()
-		return self._deser(HttpService:JSONDecode(input), JsonUtil.deser)
+		return self._deser(jsonDecode(input) :: any, JsonUtil.deser)
 	end)
 end
 
