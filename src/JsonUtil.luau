@@ -2,8 +2,8 @@
 -- inspired by the rojo explicit standard for converting roblox types into JSON-serializable structures
 -- Services
 -- Packages
-local Option = require("@wally/Option")
-local Result = require("@wally/Result")
+local Result = require("@pkg/@nightcycle/result")
+local Option = require("@pkg/@nightcycle/option")
 -- Modules
 -- Types
 type Option<V> = Option.Option<V>
