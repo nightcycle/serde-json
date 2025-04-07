@@ -50,13 +50,14 @@ type SerdeImpl<Field, JsonField> = {
 	toString: (self: Serde<Field, JsonField>, input: Field) -> Result<string, string>,
 	fromString: (self: Serde<Field, JsonField>, input: string) -> Result<Field, string>,
 }
-export type Serde<Field, JsonField> = typeof(setmetatable(
-	{} :: {
-		_ser: (Field, ser: Ser) -> JsonField,
-		_deser: (JsonField, deser: Deser) -> Field,
-	},
-	{} :: SerdeImpl<Field, JsonField>
-))
+export type Serde<Field, JsonField> = SerdeImpl<Field, JsonField>
+-- typeof(setmetatable(
+-- 	{} :: {
+-- 		_ser: (Field, ser: Ser) -> JsonField,
+-- 		_deser: (JsonField, deser: Deser) -> Field,
+-- 	},
+-- 	{} :: SerdeImpl<Field, JsonField>
+-- ))
 
 -- Constants
 -- Variables
@@ -91,12 +92,12 @@ function newSerde<Field, JsonField>(
 	return table.freeze(setmetatable({
 		_ser = ser,
 		_deser = deser,
-	}, Serde :: SerdeImpl<any, any>))
+	}, Serde :: SerdeImpl<any, any>)) :: any
 end
 
 function intersectSerde<AField, AJsonField, BField, BJsonField>(
-	a: Serde<AField, AJsonField>,
-	b: Serde<BField, BJsonField>
+	a: any, --Serde<AField, AJsonField>,
+	b: any --Serde<BField, BJsonField>
 ): Serde<
 	AField & BField,
 	AJsonField & BJsonField
@@ -104,18 +105,18 @@ function intersectSerde<AField, AJsonField, BField, BJsonField>(
 	return table.freeze(setmetatable({
 		_ser = intersect(a._ser, b._ser),
 		_deser = intersect(a._deser, b._deser),
-	}, Serde :: SerdeImpl<any, any>))
+	}, Serde :: SerdeImpl<any, any>)) :: any
 end
 
 function Serde:toString(input: { [string]: unknown }): Result<string, string>
 	return Result.try(function()
-		return LuneUtil.Net.jsonEncode(self._ser(input, JsonUtil.ser))
+		return LuneUtil.Net.jsonEncode((self :: any)._ser(input, JsonUtil.ser))
 	end)
 end
 
 function Serde:encode(input: { [string]: unknown }): Result<{ [string]: JsonUtil.JsonValue }, string>
 	return Result.try(function()
-		return self._ser(input, JsonUtil.ser) :: { [string]: JsonUtil.JsonValue }
+		return (self :: any)._ser(input, JsonUtil.ser) :: { [string]: JsonUtil.JsonValue }
 	end):match(function(value)
 		return Result.ok(value)
 	end, function(err: string)
@@ -125,13 +126,13 @@ end
 
 function Serde:decode(input: { [string]: JsonUtil.JsonValue }): Result<{ [string]: unknown }, string>
 	return Result.try(function()
-		return self._deser(input, JsonUtil.deser)
+		return (self :: any)._deser(input, JsonUtil.deser)
 	end)
 end
 
 function Serde:fromString(input: string): Result<{ [string]: unknown }, string>
 	return Result.try(function()
-		return self._deser(LuneUtil.Net.jsonDecode(input) :: any, JsonUtil.deser)
+		return (self :: any)._deser(LuneUtil.Net.jsonDecode(input) :: any, JsonUtil.deser)
 	end)
 end
 
